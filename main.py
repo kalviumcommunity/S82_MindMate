@@ -47,77 +47,53 @@ import openai
 
 openai.api_key = "YOUR_OPENAI_API_KEY"
 
-def dynamic_prompt(journal_entry, mood):
-    prompt = (
-        f"Given the following journal entry: '{journal_entry}', and the user's current mood: '{mood}', "
-        "suggest a personalized coping strategy or affirmation to improve their mental well-being."
+def suggest_coping_strategy(journal_entry, mood):
+    # Define the function schema for the LLM
+    functions = [
+        {
+            "name": "suggest_coping_strategy",
+            "description": "Suggest a coping strategy or affirmation based on the user's journal entry and mood.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "journal_entry": {"type": "string", "description": "The user's journal entry."},
+                    "mood": {"type": "string", "description": "The user's current mood."},
+                    "suggestion": {"type": "string", "description": "A coping strategy or affirmation."}
+                },
+                "required": ["journal_entry", "mood", "suggestion"]
+            }
+        }
+    ]
+
+    messages = [
+        {"role": "system", "content": "You are an empathetic AI mental wellness assistant."},
+        {"role": "user", "content": f"Journal entry: {journal_entry}\nMood: {mood}"}
+    ]
+
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo-1106",  # or "gpt-4-0613" if available
+        messages=messages,
+        functions=functions,
+        function_call={"name": "suggest_coping_strategy"}
     )
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=prompt,
-        max_tokens=100,
-        temperature=0.7,
-        top_p=0.9
-    )
-    # Log the number of tokens used
-    if hasattr(response, 'usage') and response.usage:
+
+    # Extract the function call arguments
+    function_args = response.choices[0].message.get("function_call", {}).get("arguments", None)
+    if function_args:
+        import json
+        args = json.loads(function_args)
         print(f"Tokens used: {response.usage.get('total_tokens', 'N/A')}")
+        return args
     else:
-        print("Token usage information not available.")
-    return response.choices[0].text.strip()
-
-
-
-# One-shot prompting function with structured (JSON) output
-import json
-def one_shot_prompt_structured(journal_entry, mood):
-    example = (
-        "Example (respond in JSON):\n"
-        "{\n"
-        "  \"journal_entry\": \"I feel anxious about my exams.\",\n"
-        "  \"mood\": \"anxious\",\n"
-        "  \"suggestion\": \"Take a few deep breaths and remind yourself that preparation is key. Try a short meditation to calm your mind.\"\n"
-        "}\n\n"
-    )
-    prompt = (
-        example +
-        f"Now, given the following journal entry and mood, respond in the same JSON format.\n"
-        f"journal_entry: '{journal_entry}'\n"
-        f"mood: '{mood}'\n"
-    )
-    # Note: OpenAI's API does not support top_k. Only top_p and temperature are available.
-    # If using HuggingFace Transformers, you could use top_k like this:
-    # output = model.generate(input_ids, top_k=50, top_p=0.9, temperature=0.7)
-
-    # For OpenAI API, you can only set top_p and temperature:
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=prompt,
-        max_tokens=150,
-        temperature=0.7,
-        top_p=0.9,
-        stop=["}"]
-    )
-    # Log the number of tokens used
-    if hasattr(response, 'usage') and response.usage:
-        print(f"Tokens used: {response.usage.get('total_tokens', 'N/A')}")
-    else:
-        print("Token usage information not available.")
-    # Parse and return structured output
-    try:
-        # Add the closing brace if the stop sequence cuts it off
-        text = response.choices[0].text.strip()
-        if not text.endswith('}'):
-            text += '}'
-        result_json = json.loads(text)
-        return result_json
-    except Exception as e:
-        print("Failed to parse JSON output:", e)
-        print("Raw output:", response.choices[0].text.strip())
+        print("No function call detected.")
         return None
 
 # Example usage for RTFC-based prompting
 entry = "I feel overwhelmed with work and can't focus."
 mood = "stressed"
 result = mindmate_rtfc_prompt(entry, mood)
+print(result)
+
+# Example usage for suggest_coping_strategy function
+result = suggest_coping_strategy(entry, mood)
 print(result)
