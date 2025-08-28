@@ -45,7 +45,8 @@ def one_shot_prompt_structured(journal_entry, mood):
         prompt=prompt,
         max_tokens=150,
         temperature=0.7,
-        top_p=0.9
+        top_p=0.9,
+        stop=["}"]
     )
     # Log the number of tokens used
     if hasattr(response, 'usage') and response.usage:
@@ -54,7 +55,11 @@ def one_shot_prompt_structured(journal_entry, mood):
         print("Token usage information not available.")
     # Parse and return structured output
     try:
-        result_json = json.loads(response.choices[0].text.strip())
+        # Add the closing brace if the stop sequence cuts it off
+        text = response.choices[0].text.strip()
+        if not text.endswith('}'):
+            text += '}'
+        result_json = json.loads(text)
         return result_json
     except Exception as e:
         print("Failed to parse JSON output:", e)
