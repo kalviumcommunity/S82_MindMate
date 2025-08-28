@@ -11,7 +11,8 @@ def dynamic_prompt(journal_entry, mood):
         engine="text-davinci-003",
         prompt=prompt,
         max_tokens=100,
-        temperature=0.7
+        temperature=0.7,
+        top_p=0.9
     )
     # Log the number of tokens used
     if hasattr(response, 'usage') and response.usage:
@@ -39,7 +40,8 @@ def one_shot_prompt(journal_entry, mood):
         engine="text-davinci-003",
         prompt=prompt,
         max_tokens=100,
-        temperature=0.7
+        temperature=0.7,
+        top_p=0.9
     )
     # Log the number of tokens used
     if hasattr(response, 'usage') and response.usage:
