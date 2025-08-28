@@ -40,6 +40,11 @@ def one_shot_prompt_structured(journal_entry, mood):
         f"journal_entry: '{journal_entry}'\n"
         f"mood: '{mood}'\n"
     )
+    # Note: OpenAI's API does not support top_k. Only top_p and temperature are available.
+    # If using HuggingFace Transformers, you could use top_k like this:
+    # output = model.generate(input_ids, top_k=50, top_p=0.9, temperature=0.7)
+
+    # For OpenAI API, you can only set top_p and temperature:
     response = openai.Completion.create(
         engine="text-davinci-003",
         prompt=prompt,
